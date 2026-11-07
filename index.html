@@ -660,6 +660,159 @@ async function scryptFn(pw, salt, N, r, p, dkLen) {
 
 </script>
 <script>
+/* ===== الاتصال بقاعدة بيانات Supabase المجانية (حسابات + بيانات + فيديوهات) =====
+   املأ القيمتين دول مرة واحدة (من Supabase ← Project Settings ← API). المفتاح anon مفتاح عام ومش سري.
+   لو سبتهم فاضيين: الموقع يشتغل زي الأول (قاعدة محلية على الجهاز بس). */
+window.DAWA_SUPABASE = { url: "https://cublhqoobatgzidbzzwy.supabase.co", key: "sb_publishable_IFZ19YEpPjZ1GdO4Byet2Q_PKCpUBNf" };
+(function (W) {
+  "use strict";
+  var C = W.DAWA_SUPABASE || {}, URL0 = String(C.url || "").trim().replace(/\/+$/, ""), KEY = String(C.key || "").trim();
+  if (!URL0 || !KEY) return;
+  var ar = !/^en/i.test((W.document && W.document.documentElement.lang) || (W.navigator && W.navigator.language) || "ar");
+  var T = function (e, a) { return ar ? a : e; };
+  var f0 = W.fetch.bind(W), SK = "dawa:sb", mem = null, refreshing = null;
+
+  function lsGet(k) { try { return W.localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { W.localStorage.setItem(k, v); } catch (e) {} }
+  function lsDel(k) { try { W.localStorage.removeItem(k); } catch (e) {} }
+  function sess() { if (mem) return mem; try { mem = JSON.parse(lsGet(SK) || "null"); } catch (e) { mem = null; } return mem; }
+  function setSess(s) { mem = s || null; if (s) lsSet(SK, JSON.stringify(s)); else lsDel(SK); }
+  function claims(t) { try { return JSON.parse(atob(String(t).split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); } catch (e) { return {}; } }
+  function jf(url, o, ms) {
+    o = o || {}; var ac = new AbortController(), to = setTimeout(function () { ac.abort(); }, ms || 25000); o.signal = ac.signal;
+    return f0(url, o).then(function (r) { clearTimeout(to); return r.text().then(function (t) { var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {} return { ok: r.ok, s: r.status, j: j }; }); },
+      function (e) { clearTimeout(to); throw e; });
+  }
+  function hdr(tok, extra) { var h = { apikey: KEY, Authorization: "Bearer " + (tok || KEY), "Content-Type": "application/json" }; for (var k in (extra || {})) h[k] = extra[k]; return h; }
+
+  function refresh() {
+    var s = sess(); if (!s || !s.rt) return Promise.resolve(null);
+    if (refreshing) return refreshing;
+    refreshing = jf(URL0 + "/auth/v1/token?grant_type=refresh_token", { method: "POST", headers: hdr(null), body: JSON.stringify({ refresh_token: s.rt }) })
+      .then(function (r) {
+        refreshing = null;
+        if (r.ok && r.j && r.j.access_token) { var n = { at: r.j.access_token, rt: r.j.refresh_token || s.rt }; setSess(n); lsSet("dawa:token", n.at); return n; }
+        if (r.s === 400 || r.s === 401 || r.s === 403) setSess(null);   // الجلسة انتهت فعلًا
+        return null;
+      }, function () { refreshing = null; return null; });
+    return refreshing;
+  }
+  function bearer(force) {
+    var s = sess(); if (!s) return Promise.resolve(KEY);
+    if (!force && claims(s.at).exp * 1000 - Date.now() > 60000) return Promise.resolve(s.at);
+    return refresh().then(function (n) { return n ? n.at : (force ? KEY : (claims(s.at).exp * 1000 > Date.now() ? s.at : KEY)); });
+  }
+  function rpc(name, body, retry) {
+    return bearer(retry).then(function (tok) {
+      return jf(URL0 + "/rest/v1/rpc/" + name, { method: "POST", headers: hdr(tok), body: JSON.stringify(body || {}) }).then(function (r) {
+        if (r.s === 401 && !retry && sess()) return rpc(name, body, true);
+        return r;
+      });
+    });
+  }
+  function netErr() { return [502, { error: T("Could not reach the server. Check your internet.", "تعذّر الاتصال بالخادم. تأكد من الإنترنت.") }]; }
+
+  /* ---------- /api/auth ---------- */
+  function authRoute(body) {
+    var b = {}; try { b = JSON.parse(body || "{}"); } catch (e) {}
+    var pw = String(b.pw || ""), raw = String(b.email != null ? b.email : (b.u || "")).trim();
+    if (raw.indexOf("@") < 0) return Promise.resolve([400, { error: "اكتب الإيميل الصحيح (مثال: name@example.com)" }]);
+    if (!pw || pw.length > 200) return Promise.resolve([400, { error: "اكتب كلمة المرور" }]);
+    var email = raw.toLowerCase(), reg = b.mode === "reg";
+    var req = reg ? jf(URL0 + "/auth/v1/signup", { method: "POST", headers: hdr(null), body: JSON.stringify({ email: email, password: pw }) })
+                  : jf(URL0 + "/auth/v1/token?grant_type=password", { method: "POST", headers: hdr(null), body: JSON.stringify({ email: email, password: pw }) });
+    return req.then(function (r) {
+      var j = r.j || {}, code = String(j.error_code || j.code || ""), msg = String(j.msg || j.message || j.error_description || "");
+      if (!r.ok) {
+        if (r.s === 429 || code === "over_request_rate_limit" || code === "over_email_send_rate_limit") return [429, { error: "محاولات كثيرة، حاول بعد شوية" }];
+        if (code === "user_already_exists" || /already (been )?registered/i.test(msg)) return [409, { error: "هذا الإيميل مسجّل بالفعل، سجّل الدخول" }];
+        if (code === "email_not_confirmed") return [401, { error: "لازم تأكد الإيميل الأول (شوف رسالة التأكيد في بريدك)" }];
+        if (code === "weak_password") return [400, { error: "كلمة المرور ضعيفة، استخدم حروف وأرقام (8 أحرف أو أكثر)" }];
+        if (r.s === 400 && !reg) return [401, { error: "الإيميل أو كلمة المرور غير صحيحة" }];
+        return [r.s >= 400 && r.s < 500 ? r.s : 500, { error: msg || "حدث خطأ. حاول مرة أخرى." }];
+      }
+      if (!j.access_token) return [403, { error: "تم إنشاء الحساب لكن لازم تأكد الإيميل أولًا ثم سجّل الدخول (أو عطّل Confirm email في Supabase)" }];
+      setSess({ at: j.access_token, rt: j.refresh_token });
+      return rpc("me", {}).then(function (m) {
+        if (!m.ok || !m.j || !m.j.u) return [500, { error: "الحساب اتفتح لكن ملف التعريف مش موجود — شغّل ملف setup.sql في Supabase" }];
+        return [200, { u: m.j.u, email: m.j.email || email, name: String(m.j.email || email).split("@")[0].slice(0, 20), token: j.access_token, sheikh: !!m.j.sheikh }];
+      });
+    }, netErr);
+  }
+
+  /* ---------- /db/... ---------- */
+  function dbRoute(m, path, body) {
+    var a = path.replace(/[?#].*$/, "").slice(4).split("/").filter(Boolean).map(function (x) { try { return decodeURIComponent(x); } catch (e) { return x; } });
+    if (a.length) a[a.length - 1] = a[a.length - 1].replace(/\.json$/, "");
+    var p = a.join("/"), v = null;
+    if (m === "PUT" || m === "PATCH") { try { v = JSON.parse(body); } catch (e) { return Promise.resolve([400, { error: "JSON غير صالح" }]); } }
+    var call = m === "GET" ? rpc("db_get", { p: p }) : rpc("db_write", { m: m, p: p, v: v });
+    return call.then(function (r) {
+      if (r.ok) return [200, m === "GET" ? r.j : { ok: 1 }];
+      var msg = String((r.j && r.j.message) || "");
+      if (/forbidden/i.test(msg) || (r.j && r.j.code === "42501")) return [403, { error: "forbidden" }];
+      if (r.s === 404) return [503, { error: "قاعدة البيانات مش جاهزة — شغّل ملف setup.sql في Supabase" }];
+      return [r.s >= 400 && r.s < 500 ? r.s : 500, { error: msg || "error" }];
+    }, netErr);
+  }
+
+  /* اعتراض fetch: /api و /db بتروح لـ Supabase بدل القاعدة المحلية */
+  var f1 = W.fetch;
+  W.fetch = function (u, i) {
+    var s = typeof u === "string" ? u : (u && u.url) || "";
+    if (!/^\/(api|db)\//.test(s)) return f1.apply(this, arguments);
+    i = i || {}; var m = String(i.method || "GET").toUpperCase(), body = typeof i.body === "string" ? i.body : null, p0 = s.replace(/[?#].*$/, "");
+    var go = p0 === "/api/config" ? Promise.resolve([200, { db: true }])
+      : p0 === "/api/auth" && m === "POST" ? authRoute(body)
+      : s.indexOf("/db/") === 0 ? dbRoute(m, s, body)
+      : Promise.resolve([404, { error: "not found" }]);
+    return go.then(function (r) { return new W.Response(JSON.stringify(r[1]), { status: r[0], headers: { "Content-Type": "application/json" } }); });
+  };
+
+  /* القاعدة دايمًا "مفتوحة" (مفيش تشفير محلي ولا ملف) */
+  var D = W.DawaDB || {};
+  D.unlocked = function () { return true; }; D.auto = function () { return Promise.resolve(true); };
+  D.supported = true; D.remote = true; D.ready = Promise.resolve();
+  var reset0 = D.reset; D.reset = function () { setSess(null); return reset0 ? Promise.resolve(reset0()).catch(function () {}) : Promise.resolve(); };
+  W.DawaDB = D;
+
+  /* ---------- رفع الفيديو (Storage) ---------- */
+  var MAXB = 50 * 1024 * 1024;
+  W.DawaSB = {
+    url: URL0, max: MAXB,
+    uid: function () { var s = sess(); return s ? (claims(s.at).sub || null) : null; },
+    publicUrl: function (path) { return URL0 + "/storage/v1/object/public/videos/" + path.split("/").map(encodeURIComponent).join("/"); },
+    pathOf: function (u) { var k = URL0 + "/storage/v1/object/public/videos/"; u = String(u || ""); if (u.indexOf(k) !== 0) return null; try { return decodeURIComponent(u.slice(k.length)); } catch (e) { return null; } },
+    upload: function (file, onProg) {
+      return bearer().then(function (tok) {
+        var uid = W.DawaSB.uid(); if (!uid || tok === KEY) throw new Error(T("Sign in first.", "سجّل الدخول الأول."));
+        if (!/^video\//.test(file.type || "")) throw new Error(T("Choose a video file.", "اختار ملف فيديو."));
+        if (file.size > MAXB) throw new Error(T("The video is larger than 50 MB. Compress it, or add a YouTube link instead.", "الفيديو أكبر من 50 ميجا. اضغطه، أو حط رابط يوتيوب بدله."));
+        var ext = (String(file.name || "").match(/\.([a-z0-9]{2,5})$/i) || [0, "mp4"])[1].toLowerCase();
+        var path = uid + "/" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + "." + ext;
+        return new Promise(function (res, rej) {
+          var x = new XMLHttpRequest(); x.open("POST", URL0 + "/storage/v1/object/videos/" + path);
+          x.setRequestHeader("apikey", KEY); x.setRequestHeader("Authorization", "Bearer " + tok);
+          x.setRequestHeader("Content-Type", file.type); x.setRequestHeader("x-upsert", "false"); x.setRequestHeader("cache-control", "max-age=31536000");
+          if (x.upload && onProg) x.upload.onprogress = function (e) { if (e.lengthComputable) onProg(e.loaded / e.total); };
+          x.onerror = function () { rej(new Error(T("Upload failed. Check your internet.", "فشل الرفع. تأكد من الإنترنت."))); };
+          x.ontimeout = x.onerror; x.timeout = 30 * 60e3;
+          x.onload = function () {
+            if (x.status >= 200 && x.status < 300) return res({ path: path, url: W.DawaSB.publicUrl(path) });
+            var m = ""; try { m = JSON.parse(x.responseText).message || ""; } catch (e) {}
+            rej(new Error(/exceeded|too large|maximum/i.test(m) ? T("The video is larger than 50 MB.", "الفيديو أكبر من 50 ميجا.") : (m || T("Upload failed.", "فشل الرفع.")) + " (" + x.status + ")"));
+          };
+          x.send(file);
+        });
+      });
+    },
+    remove: function (path) {
+      return bearer().then(function (tok) { return f0(URL0 + "/storage/v1/object/videos/" + path.split("/").map(encodeURIComponent).join("/"), { method: "DELETE", headers: hdr(tok) }); }).catch(function () {});
+    }
+  };
+})(window);
+</script>
+<script>
 /* ===== بوابة الدخول الاختيارية =====
    - مسجّل بجوجل أو اختار "حفظ على الجهاز": البيانات بتتحفظ في localStorage وبتتزامن مع حسابك.
    - "متابعة بدون حفظ": البيانات في الذاكرة فقط وبتتمسح بمجرد غلق الصفحة. */
@@ -2711,6 +2864,7 @@ const hqLocalNote=()=>"";const hqLocalNote_unused=()=>hqRemote()?"":`<div class=
 function hqCard(h,own){
   const me=HQU,n=hqSubs(h).length,rc=hqRates(h).length,avg=hqAvg(h),isOwn=!!(me&&h.owner===me.uid),sub=!!(me&&h.subs&&h.subs[me.uid]),myR=me&&h.rates&&h.rates[me.uid]?+h.rates[me.uid].r:0;
   const links=hqArr(h.links).map(l=>({l:String(l.l||"").slice(0,40),u:hqUrl(l.u)})).filter(l=>l.u);
+  const vids=hqArr(h.videos).map(x=>({t:String((x&&x.t)||"").slice(0,80),u:hqUrl(x&&x.u)})).filter(x=>x.u).slice(0,10);
   const rate=`<span class="tag" style="color:var(--gold-ink)">${rc?hqStars(avg)+" "+avg.toFixed(1)+" ("+hqNum(rc)+")":esc(L("No ratings yet","لا تقييمات بعد"))}</span>`;
   const act=isOwn?`<span class="tag">${esc(L("Your circle","حلقتك"))}</span>`:`<button class="${sub?"chip":"btn"}" data-hq="sub" data-id="${esc(h.id)}">${esc(sub?L("Unsubscribe","إلغاء الاشتراك"):L("Subscribe","اشترك"))}</button>`;
   const stars=sub&&!isOwn?`<div class="row" style="gap:4px"><span class="muted sm">${esc(L("Your rating","تقييمك"))}:</span>${[1,2,3,4,5].map(i=>`<button class="chip" data-hq="rate" data-id="${esc(h.id)}" data-v="${i}" aria-label="${i}" style="${i<=myR?"color:var(--gold-ink)":""}">${i<=myR?"★":"☆"}</button>`).join("")}</div>`:(!isOwn?`<div class="muted sm">${esc(me?L("Subscribe to rate this circle.","اشترك عشان تقيّم الحلقة."):L("Sign in and subscribe to rate.","سجّل الدخول واشترك عشان تقيّم."))}</div>`:"");
@@ -2719,6 +2873,7 @@ function hqCard(h,own){
     ${h.desc?`<p class="hq-d">${esc(h.desc)}</p>`:""}
     ${h.schedule?`<div class="sm hq-sch">🕒 ${esc(h.schedule)}</div>`:""}
     ${links.length?`<div class="row">${links.map(l=>`<a class="btn sm ghost" href="${esc(l.u)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(l.l||new URL(l.u).hostname)}</a>`).join("")}</div>`:""}
+    ${vids.length?`<details class="hq-vd card flat" style="padding:8px 12px"><summary class="sm" style="cursor:pointer">🎬 ${esc(hqNum(vids.length))} ${esc(L(vids.length===1?"video":"videos","فيديو"))}</summary><div style="display:grid;gap:12px;margin-top:8px">${vids.map(x=>`<div style="display:grid;gap:4px"><b class="sm">${esc(x.t||L("Video","فيديو"))}</b><video controls playsinline preload="metadata" src="${esc(x.u)}#t=0.1" style="width:100%;max-height:420px;border-radius:12px;background:#000"></video></div>`).join("")}</div></details>`:""}
     <div class="row sb hq-ft"><div class="row" style="gap:8px">${rate}<span class="tag">👥 ${esc(hqNum(n))} ${esc(L(n===1?"subscriber":"subscribers","مشترك"))}</span></div>${act}</div>
     ${stars}</article>`}
 
@@ -2756,8 +2911,12 @@ async function hqMount(){
 
 /* ---------- لوحة الشيخ ---------- */
 const hqLinkRow=l=>`<div class="row hq-lr" style="gap:6px;flex-wrap:nowrap"><input class="hq-ll" type="text" maxlength="40" placeholder="${esc(L("Label (e.g. Zoom)","اسم الرابط (مثال: زووم)"))}" value="${esc(l.l||"")}" style="width:34%"><input class="hq-lu" type="text" inputmode="url" dir="ltr" maxlength="300" placeholder="https://…" value="${esc(l.u||"")}" style="flex:1;min-width:0"><button class="chip" data-hq="rmlink" aria-label="${esc(L("Remove","حذف"))}">✕</button></div>`;
+const hqVidsHtml=()=>{const a=HQS.vids||[];return a.length?a.map((x,i)=>`<div class="row sb" style="gap:8px"><span class="sm" style="min-width:0;overflow:hidden;text-overflow:ellipsis">🎬 ${esc(x.t||L("Video","فيديو"))}</span><button class="chip" data-hq="vidrm" data-i="${i}" aria-label="${esc(L("Remove","حذف"))}">🗑</button></div>`).join(""):`<div class="muted sm">${esc(L("No videos yet.","لسه مفيش فيديوهات."))}</div>`};
+const hqVidsPaint=()=>{const e=document.getElementById("hq-vids");if(e)e.innerHTML=hqVidsHtml()};
 function hqForm(h,me){
   const v=h||{},ls=hqArr(v.links);while(ls.length<2)ls.push({});
+  const vk=h?h.id:"new";if(HQS.vk!==vk){HQS.vk=vk;HQS.vids=hqArr(v.videos).map(x=>({t:String((x&&x.t)||"").slice(0,80),u:String((x&&x.u)||""),p:(x&&x.p)?String(x.p):null})).filter(x=>hqUrl(x.u));HQS.vorig=HQS.vids.map(x=>x.p).filter(Boolean)}
+  const sb=!!(window.DawaSB&&window.__CFG);
   return `<div class="card" style="display:grid;gap:10px"><b>${esc(h?L("Edit circle","تعديل الحلقة"):L("New circle","حلقة جديدة"))}</b>
    <label class="sm">${esc(L("Sheikh name","اسم الشيخ"))}<input type="text" id="hq-name" maxlength="60" value="${esc(v.sheikh||me.name||"")}"></label>
    <label class="sm">${esc(L("Circle title","عنوان الحلقة"))}<input type="text" id="hq-title" maxlength="100" value="${esc(v.title||"")}"></label>
@@ -2767,6 +2926,12 @@ function hqForm(h,me){
    <div class="sm">${esc(L("Circle links (Zoom, YouTube, Telegram…)","روابط الحلقة (زووم، يوتيوب، تليجرام…)"))}</div>
    <div id="hq-links" style="display:grid;gap:8px">${ls.map(hqLinkRow).join("")}</div>
    <div class="row"><button class="chip" data-hq="addlink">＋ ${esc(L("Add link","إضافة رابط"))}</button></div>
+   <div class="sm">${esc(L("Circle videos (uploaded to the site)","فيديوهات الحلقة (تترفع على الموقع)"))}</div>
+   ${sb?`<div id="hq-vids" style="display:grid;gap:6px">${hqVidsHtml()}</div>
+   <div class="row" style="gap:6px;flex-wrap:wrap"><input type="text" id="hq-vt" maxlength="80" placeholder="${esc(L("Video title","عنوان الفيديو"))}" style="flex:1;min-width:140px"><input type="file" id="hq-vf" accept="video/*" hidden><button class="chip" data-hq="vidpick">🎬 ${esc(L("Choose a video & upload","اختر فيديو وارفعه"))}</button></div>
+   <div class="bar4" id="hq-vp" hidden><i style="width:0"></i></div>
+   <div class="muted sm">${esc(L("Up to 50 MB per video, 10 videos per circle. For longer lectures add a YouTube link above.","حتى 50 ميجا للفيديو و10 فيديوهات للحلقة. للمحاضرات الأطول حط رابط يوتيوب فوق."))}</div>`
+   :`<div class="notice">${esc(L("Video upload needs the shared database (see the setup guide).","رفع الفيديو محتاج ربط قاعدة البيانات المشتركة (شوف دليل الإعداد)."))}</div>`}
    <div class="muted sm" id="hq-err" role="alert" style="color:var(--danger,#b00020)"></div>
    <div class="row"><button class="btn" data-hq="save">${esc(h?L("Save changes","حفظ التعديلات"):L("Publish circle","نشر الحلقة"))}</button>${h?`<button class="chip" data-hq="cancel">${esc(L("Cancel","إلغاء"))}</button>`:""}</div></div>`}
 function hqMine(me){
@@ -2795,17 +2960,32 @@ async function hqSave(){
   document.querySelectorAll(".hq-lr").forEach(r=>{const raw=r.querySelector(".hq-lu").value.trim(),lab=r.querySelector(".hq-ll").value.trim().slice(0,40);if(!raw&&!lab)return;const u=hqUrl(raw);if(!u){bad=true;return}links.push({l:lab,u})});
   if(bad)return er(L("One of the links is not a valid web address.","أحد الروابط مش عنوان ويب صحيح."));
   if(links.length>8)return er(L("Up to 8 links.","حتى 8 روابط."));
+  if(HQS.vbusy)return er(L("Wait for the video upload to finish.","استنى لحد ما رفع الفيديو يخلص."));
   er("");if(HQS.busy)return;HQS.busy=true;
-  const body={title:title.slice(0,100),sheikh:name.slice(0,60),type,desc:g("hq-desc").trim().slice(0,1000),schedule:g("hq-sch").trim().slice(0,200),links};
+  const videos=(HQS.vids||[]).slice(0,10).map(x=>({t:String(x.t||"").slice(0,80),u:x.u,p:x.p||null}));
+  const body={title:title.slice(0,100),sheikh:name.slice(0,60),type,desc:g("hq-desc").trim().slice(0,1000),schedule:g("hq-sch").trim().slice(0,200),links,videos};
   try{
     if(HQS.edit){await hqPatch("halaqat/"+HQS.edit,body)}
     else{const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);await hqPut("halaqat/"+id,Object.assign({id,owner:me.uid,at:Date.now()},body))}
-    HQS.edit=null;hqToast(L("Saved.","تم الحفظ."));await hqDash();window.scrollTo(0,0)
+    if(window.DawaSB){const keep=new Set(videos.map(x=>x.p).filter(Boolean));(HQS.vorig||[]).filter(p=>!keep.has(p)).forEach(p=>DawaSB.remove(p))}
+    HQS.vk=null;HQS.edit=null;hqToast(L("Saved.","تم الحفظ."));await hqDash();window.scrollTo(0,0)
   }catch(e){er(L("Could not save: ","تعذر الحفظ: ")+e.message)}finally{HQS.busy=false}}
 async function hqDel(id){
   const me=await hqMe();if(!me)return;const h=(HQS.data||[]).find(x=>x.id===id);if(!h||h.owner!==me.uid)return;
   if(!confirm(L("Delete this circle and its subscribers?","حذف الحلقة ومشتركيها؟")))return;
-  try{await hqPut("halaqat/"+id,null);if(HQS.edit===id)HQS.edit=null;await hqDash()}catch(e){hqToast(e.message)}}
+  try{await hqPut("halaqat/"+id,null);if(window.DawaSB)hqArr(h.videos).forEach(x=>{const q=DawaSB.pathOf(x&&x.u);if(q)DawaSB.remove(q)});if(HQS.edit===id)HQS.edit=null;await hqDash()}catch(e){hqToast(e.message)}}
+async function hqVidUp(inp){
+  const f=inp.files&&inp.files[0];inp.value="";if(!f||!window.DawaSB||HQS.vbusy)return;
+  const er=m=>{const e=document.getElementById("hq-err");if(e)e.textContent=m||""},bar=document.getElementById("hq-vp"),fill=bar&&bar.firstElementChild;
+  if((HQS.vids||[]).length>=10)return er(L("Up to 10 videos per circle.","حتى 10 فيديوهات للحلقة."));
+  const te=document.getElementById("hq-vt"),title=((te&&te.value)||"").trim().slice(0,80)||String(f.name||"").replace(/\.[^.]+$/,"").slice(0,80)||L("Video","فيديو");
+  er("");HQS.vbusy=true;if(bar){bar.hidden=false;fill.style.width="0"}
+  try{const r=await DawaSB.upload(f,p=>{if(fill)fill.style.width=Math.round(p*100)+"%"});
+    HQS.vids=(HQS.vids||[]).concat([{t:title,u:r.url,p:r.path}]);if(te)te.value="";hqVidsPaint();hqToast(L("Video uploaded. Press Save to publish.","اترفع الفيديو. اضغط حفظ للنشر."))}
+  catch(e){er(e.message||L("Upload failed.","فشل الرفع."))}
+  finally{HQS.vbusy=false;const b=document.getElementById("hq-vp");if(b)b.hidden=true}}
+function hqVidRm(i){const x=(HQS.vids||[])[i];if(!x)return;HQS.vids.splice(i,1);hqVidsPaint();
+  if(x.p&&!(HQS.vorig||[]).includes(x.p)&&window.DawaSB)DawaSB.remove(x.p)}
 async function hqSub(id){
   const me=await hqMe();if(!me)return hqNeedLogin();
   const h=(HQS.data||[]).find(x=>x.id===id);if(!h||h.owner===me.uid)return;
@@ -2842,13 +3022,16 @@ document.addEventListener("click",e=>{
   else if(a==="sub")hqSub(b.dataset.id);
   else if(a==="rate")hqRate(b.dataset.id,+b.dataset.v);
   else if(a==="save")hqSave();
-  else if(a==="edit"){HQS.edit=b.dataset.id;hqDash().then(()=>window.scrollTo(0,0))}
-  else if(a==="cancel"){HQS.edit=null;hqDash()}
+  else if(a==="edit"){HQS.edit=b.dataset.id;HQS.vk=null;hqDash().then(()=>window.scrollTo(0,0))}
+  else if(a==="cancel"){HQS.edit=null;HQS.vk=null;hqDash()}
+  else if(a==="vidpick"){const f=document.getElementById("hq-vf");if(f)f.click()}
+  else if(a==="vidrm")hqVidRm(+b.dataset.i)
   else if(a==="del")hqDel(b.dataset.id);
   else if(a==="addlink"){const c=document.getElementById("hq-links");if(c&&c.children.length<8)c.insertAdjacentHTML("beforeend",hqLinkRow({}))}
   else if(a==="rmlink"){const r=b.closest(".hq-lr");if(r)r.remove()}
 });
 document.addEventListener("input",e=>{if(e.target.id==="hq-q"){HQS.q=e.target.value;hqPaint()}});
+document.addEventListener("change",e=>{if(e.target.id==="hq-vf")hqVidUp(e.target)});
 
 /* ===== أسماء القرّاء والتلاوات اللي جاية من الـ APIs: تتحوّل للغة المفعّلة في الموقع =====
    1) اسم الشيخ والرواية بنفس اللغة من mp3quran (ar / eng) حسب الـ id.
