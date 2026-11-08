@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="ar">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8"><meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>منصة دعوة</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;600;700&family=Reem+Kufi:wght@600;700&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://api.alquran.cloud"><link rel="preconnect" href="https://api.aladhan.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;600;700&family=Reem+Kufi:wght@600;700&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;600;700&family=Reem+Kufi:wght@600;700&display=swap"></noscript>
 <style>
 /* Layout: persistent sidebar (desktop) / bottom tab bar (phone); one 640px content column of cards. */
 :root{
@@ -217,7 +217,19 @@ main [style*="position:sticky"]{top:calc(var(--hdr) + env(safe-area-inset-top,0p
 @media (min-width:1280px){.shell{max-width:1200px}}
 </style>
 
-<div class="shell">
+<style>
+.azp{position:fixed;inset:0;z-index:90;background:var(--bg);color:var(--fg);overflow:auto;padding:calc(12px + env(safe-area-inset-top,0px)) 14px calc(20px + env(safe-area-inset-bottom,0px))}
+.azp .in{max-width:680px;margin:0 auto;display:grid;gap:10px}.azr{display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.tfv,.azr .fv{border:0;background:none;font-size:22px;color:var(--gold);cursor:pointer;line-height:1}
+.azs{position:fixed;inset:0;z-index:100;display:grid;place-items:center;text-align:center;color:#fff;padding:24px;background:linear-gradient(160deg,#04241c,#0f5c46,#1d6b57,#0b1120);background-size:300% 300%;animation:azg 14s ease infinite}
+@keyframes azg{50%{background-position:100% 100%}}.azs>div{display:grid;gap:14px;justify-items:center;max-width:520px}
+.azm{font-size:96px;color:#d4af37;animation:azp 3s ease-in-out infinite;text-shadow:0 0 40px #d4af3788}@keyframes azp{50%{transform:scale(1.12)}}
+.azn{font-family:var(--font-display);font-size:34px;font-weight:700}.azt{font-size:54px;font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.azw{display:flex;gap:4px;align-items:center;height:56px}.azw i{width:5px;height:12px;border-radius:3px;background:#d4af37;animation:azb 1s ease-in-out infinite}
+.azw i:nth-child(3n){animation-delay:.2s}.azw i:nth-child(3n+1){animation-delay:.5s}@keyframes azb{50%{height:52px}}
+.tpg{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}.tpc{position:relative;border:2px solid var(--line);border-radius:10px;overflow:hidden;line-height:0}
+.tpc[aria-pressed=true]{border-color:var(--primary)}.tpc canvas{width:100%;height:auto;cursor:pointer}.tpc .tfv{position:absolute;top:2px;inset-inline-end:4px;text-shadow:0 1px 3px #000}
+</style><div class="shell">
   <aside class="side" aria-label="Main">
     <div class="logo"><i>☪</i><span data-t="appName"></span></div>
     <nav class="nav" id="nav"></nav>
@@ -731,12 +743,22 @@ window.DAWA_SUPABASE = { url: "https://cublhqoobatgzidbzzwy.supabase.co", key: "
         if (r.s === 400 && !reg) return [401, { error: "الإيميل أو كلمة المرور غير صحيحة" }];
         return [r.s >= 400 && r.s < 500 ? r.s : 500, { error: msg || "حدث خطأ. حاول مرة أخرى." }];
       }
-      if (!j.access_token) return [403, { error: "تم إنشاء الحساب لكن لازم تأكد الإيميل أولًا ثم سجّل الدخول (أو عطّل Confirm email في Supabase)" }];
-      setSess({ at: j.access_token, rt: j.refresh_token });
-      return rpc("me", {}).then(function (m) {
-        if (!m.ok || !m.j || !m.j.u) return [500, { error: "الحساب اتفتح لكن ملف التعريف مش موجود — شغّل ملف setup.sql في Supabase" }];
-        return [200, { u: m.j.u, email: m.j.email || email, name: String(m.j.email || email).split("@")[0].slice(0, 20), token: j.access_token, sheikh: !!m.j.sheikh }];
-      });
+      var fin = function (j) {
+        setSess({ at: j.access_token, rt: j.refresh_token });
+        return rpc("me", {}).then(function (m) {
+          if (!m.ok || !m.j || !m.j.u) return [500, { error: "الحساب اتفتح لكن ملف التعريف مش موجود — شغّل ملف setup.sql في Supabase" }];
+          return [200, { u: m.j.u, email: m.j.email || email, name: String(m.j.email || email).split("@")[0].slice(0, 20), token: j.access_token, sheikh: !!m.j.sheikh }];
+        });
+      };
+      if (j.access_token) return fin(j);
+      if (!reg) return [403, { error: "لازم تأكد الإيميل الأول ثم سجّل الدخول" }];
+      /* الإيميل مسجّل بالفعل (سوبابيز بيرجّع رد فاضي): جرّب الدخول بنفس الباسورد بدل الرفض */
+      return jf(URL0 + "/auth/v1/token?grant_type=password", { method: "POST", headers: hdr(null), body: JSON.stringify({ email: email, password: pw }) }).then(function (r2) {
+        var j2 = r2.j || {};
+        if (r2.ok && j2.access_token) return fin(j2);
+        if (String(j2.error_code || j2.code) === "email_not_confirmed") return [401, { error: "لازم تأكد الإيميل الأول (شوف رسالة التأكيد في بريدك)" }];
+        return [409, { error: "هذا الإيميل مسجّل بالفعل. اضغط «دخول» واكتب كلمة المرور الصحيحة." }];
+      }, netErr);
     }, netErr);
   }
 
@@ -837,7 +859,7 @@ function bad(){if(!STORE_OK)return "nostore";
  var st=rd("dawa:state"),me=rd("dawa:x:me"),tok=rd("dawa:token"),sv=rd("dawa:saved")==="1",i,k,o;
  try{if(st!==null){o=JSON.parse(st);if(!o||typeof o!=="object"||Array.isArray(o))return "state"}}catch(e){return "state"}
  try{if(me!==null){o=JSON.parse(me);if(!o||typeof o!=="object"||!o.u)return "me"}}catch(e){return "me"}
- if((sv||tok)&&me===null)return "me";
+ if((sv||tok)&&me===null)return "me";if(tok&&window.DawaDB&&DawaDB.remote&&!rd("dawa:sb"))return "me";
  try{for(i=0;i<R.length;i++){k=R.key(i);if(k&&(k.indexOf("dawa:x:")===0||k==="dawa:syncts"||k==="dawa:ldb")){var v=R.getItem(k);if(v!==null)JSON.parse(v)}}}catch(e){return "data"}
  return ""}
 /* شاشة الخطأ: بدل صفحة فاضية */
@@ -910,7 +932,7 @@ function gate(opts){opts=opts||{};
  var ks=d.querySelectorAll('[data-k="skip"]');for(var i=0;i<ks.length;i++)ks[i].onclick=skip;
  document.addEventListener("keydown",esc);
  var err=function(m){q(".gt-e").textContent=m||""},box=q("#gt-g");
- var offline=!/^https?:/.test(location.protocol);
+ var offline=!/^https?:/.test(location.protocol)&&!(window.DawaDB&&DawaDB.remote);
  function setOffline(v){offline=v;var n=box.querySelector("#gt-off");if(n){n.hidden=!v;n.textContent=T("Your account will be saved on this device.","حسابك هيتحفظ على الجهاز ده (موبايل أو متصفح).")}}
  /* حساب محلي (لما القاعدة مش مفتوحة): الباسورد بيتخزّن مشفّر (PBKDF2) على الجهاز نفسه */
  function hashPw(pw,salt){var enc=new TextEncoder();
@@ -964,7 +986,7 @@ function gate(opts){opts=opts||{};
    var run=offline?viaLocal():
     fetch("/api/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:mode,email:email,pw:pw.value})})
     .then(function(x){return x.json().then(function(j){return{ok:x.ok,j:j,s:x.status}})})
-    .then(function(x){if(x.s===503)return viaLocal();if(!x.ok)throw new Error(x.j.error||"error");save(x.j,x.j.token)},function(){return viaLocal()});
+    .then(function(x){if(x.s===503&&!(window.DawaDB&&DawaDB.remote))return viaLocal();if(!x.ok)throw new Error(x.j.error||"error");save(x.j,x.j.token)},function(){return(window.DawaDB&&DawaDB.remote)?Promise.reject(new Error(T("Could not reach the server. Check your internet.","تعذّر الاتصال بالخادم. تأكد من الإنترنت وحاول تاني."))):viaLocal()});
    run.catch(function(e){setBusy(false);err(e&&e.message?e.message:T("Something went wrong. Try again.","حدث خطأ. حاول مرة أخرى."))})};
   setMode("login");return em}
  function openForm(){form();setOffline(!(window.DawaDB&&DawaDB.unlocked()));var e0=box.querySelector("#gt-em");if(e0)e0.focus()}
@@ -1492,7 +1514,8 @@ const XN=s=>String(s).replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/
 const XS={g:(k,d)=>store.get("x:"+k,d),s:(k,v)=>store.set("x:"+k,v)};
 const X={cache:{},rec:{kind:"",rw:"",eg:false,q:""},book:{b:"nawawi",p:1,q:""},sur:1,tf:"muyassar",cat:""};
 function xcap(){const k=Object.keys(X.cache);if(k.length>30)delete X.cache[k[0]]}
-const xj=async u=>{if(X.cache[u])return X.cache[u];const r=await fetch(u);if(!r.ok)throw new Error(r.status);{const v=await r.json();X.cache[u]=v;xcap();return v}};
+const pcR=/alquran\.cloud|aladhan|islamic\.network|quran\.com/,pcG=u=>{if(!pcR.test(u))return null;try{const o=JSON.parse(localStorage.getItem("dawa:c:"+u)||"null");return o&&o.e>Date.now()?o.v:null}catch(e){return null}},pcS=(u,v)=>{if(!pcR.test(u))return;try{const s=JSON.stringify(v);if(s.length<15e4)localStorage.setItem("dawa:c:"+u,JSON.stringify({e:Date.now()+(/aladhan/.test(u)?432e5:6048e5),v}))}catch(e){try{Object.keys(localStorage).filter(k=>k.indexOf("dawa:c:")===0).forEach(k=>localStorage.removeItem(k))}catch(x){}}};
+const xj=async u=>{if(X.cache[u])return X.cache[u];const p=pcG(u);if(p){X.cache[u]=p;return p}const r=await fetch(u);if(!r.ok)throw new Error(r.status);{const v=await r.json();X.cache[u]=v;pcS(u,v);xcap();return v}};
 const xe=(id,h)=>{const e=document.getElementById(id);if(e)e.innerHTML=h};
 const xerr=(id,m)=>xe(id,`<div class="card flat">${esc(L("Could not load. Check your internet connection or open the file from a web host.","تعذر التحميل. تأكد من الإنترنت أو افتح الملف من موقع مستضاف."))} (${esc(m)})</div>`);
 const chips=(arr,cur,act)=>`<div class="row">${arr.map(([k,v])=>`<button class="chip" data-x="${act}" data-y="${act}" data-v="${esc(k)}" aria-pressed="${cur===k}">${esc(v)}</button>`).join("")}</div>`;
@@ -1504,7 +1527,7 @@ X.tfo=true;
 const TFE={ibnkathir:["en-tafisr-ibn-kathir","Ibn Kathir"],jalalayn:["en-al-jalalayn","Al-Jalalayn"],maarif:["en-tafsir-maarif-ul-quran","Ma'arif al-Qur'an"],kashf:["en-kashf-al-asrar-tafsir","Kashf al-Asrar"],sahih:["","Sahih International (translation)","en.sahih"]};
 const TFX={asb:["en-asbab-al-nuzul-by-al-wahidi","Asbab al-Nuzul"]};
 const tfm=()=>S.lang==="en"?TFE:TF;
-const xjt=async(u,ms)=>{if(X.cache[u])return X.cache[u];const ac=new AbortController(),to=setTimeout(()=>ac.abort(),ms||25000);try{const r=await fetch(u,{signal:ac.signal});if(!r.ok)throw new Error(r.status);{const v=await r.json();X.cache[u]=v;xcap();return v}}finally{clearTimeout(to)}};
+const xjt=async(u,ms)=>{if(X.cache[u])return X.cache[u];const ac=new AbortController(),to=setTimeout(()=>ac.abort(),ms||25000);try{const p=pcG(u);if(p){X.cache[u]=p;return p}const r=await fetch(u,{signal:ac.signal});if(!r.ok)throw new Error(r.status);{const v=await r.json();X.cache[u]=v;pcS(u,v);xcap();return v}}finally{clearTimeout(to)}};
 const TFQ={muyassar:16,saadi:91,ibnkathir:14,qurtubi:90,tabari:15,baghawi:94,wasit:93};
 const TFQE={ibnkathir:169,maarif:168};
 const tfParse=j=>{const a=j&&j.ayahs;if(!Array.isArray(a)||!a.length)return null;const m={};a.forEach(x=>{if(x&&x.text&&String(x.text).trim())m[x.ayah]=String(x.text)});return Object.keys(m).length?m:null};
@@ -2439,9 +2462,74 @@ const PN4=[["fajr","الفجر"],["dhuhr","الظهر"],["asr","العصر"],["m
 function beep(){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=660;g.gain.setValueAtTime(.2,a.currentTime);o.start();o.stop(a.currentTime+.7)}catch(e){}}
 function notify(ti,bd){beep();try{if(window.Notification&&Notification.permission==="granted")new Notification(ti,{body:bd})}catch(e){}tsa(ti)}
 function adTick(){const A=AD();if(!A.on)return;const now=Date.now(),{a}=ptToday(),day=new Date().toDateString();
- PN4.forEach(([k,n])=>{const tm=a[k];if(tm&&Math.abs(tm-now)<45e3&&!SEEN[day+k]){SEEN[day+k]=1;notify(L("Prayer time","حان وقت الصلاة")+": "+n,"")}});
+ PN4.forEach(([k,n])=>{const tm=a[k];if(tm&&Math.abs(tm-now)<45e3&&!SEEN[day+k]){SEEN[day+k]=1;(window.__azOn&&window.__azOn()?0:notify(L("Prayer time","حان وقت الصلاة")+": "+n,""))}});
  const h=hij(new Date());if(A.wb&&h.d>=13&&h.d<=15&&localStorage.getItem("dawa:wbn")!==day){localStorage.setItem("dawa:wbn",day);notify(L("White days","الأيام البيضاء"),L("Today is one of the recommended fasting days.","اليوم من الأيام البيضاء، يُستحب الصيام."))}}
 setInterval(adTick,20000);
+const azBeep=()=>{try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=660;g.gain.setValueAtTime(.2,a.currentTime);o.start();o.stop(a.currentTime+.7)}catch(e){}};
+/* ===== أذان (100+) + قوالب صور (108) + مفضلة ===== */
+let azDevURL=null;
+const azIDB=()=>new Promise((res,rej)=>{const r=indexedDB.open("dawa-azan",1);r.onupgradeneeded=()=>r.result.createObjectStore("f");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function azDevLoad(){try{const db=await azIDB(),b=await new Promise((res,rej)=>{const q=db.transaction("f").objectStore("f").get("a");q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});if(b){if(azDevURL)URL.revokeObjectURL(azDevURL);azDevURL=URL.createObjectURL(b)}}catch(e){}}
+async function azDevSave(file){const db=await azIDB();await new Promise((res,rej)=>{const t=db.transaction("f","readwrite");t.objectStore("f").put(file,"a");t.oncomplete=res;t.onerror=()=>rej(t.error)});await azDevLoad()}
+azDevLoad();
+const AZB="https://archive.org/download/AdzanAroundTheWorld/",flg=c=>c.length===2?String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt(0))):c;
+const AZH="https://cdn.aladhan.com/audio/adhans/",AZG="https://raw.githubusercontent.com/Kiwifu/adhan-mp3/main/";
+const AZL=[["h","a9","مشاري العفاسي 1","KW"],["h","a7","مشاري العفاسي 2","KW"],["h","a4","مشاري العفاسي (دبي)","KW"],["h","a1","أحمد النفيس","🌍"],["h","a2","حافظ مصطفى أوزجان","TR"],["h","a3","أذان Mass for Peace","🎼"],["h","a11-mansour-al-zahrani","منصور الزهراني","SA"],["g","Abdulbasit_Abdusamad_1_-_Egypt_(عبد_الباسط_عبد_الصمد_-_مصر)","عبد الباسط عبد الصمد 1","EG"],["g","Abdulbasit_Abdusamad_2_-_Egypt_(عبد_الباسط_عبد_الصمد_-_مصر)","عبد الباسط عبد الصمد 2","EG"],["g","Abdulbasit_Abdusamad_3_-_Egypt_(عبد_الباسط_عبد_الصمد_-_مصر)","عبد الباسط عبد الصمد 3","EG"],["g","Abdulbasit_Abdusamad_4_-_Egypt_(عبد_الباسط_عبد_الصمد_-_مصر)","عبد الباسط عبد الصمد 4","EG"],["g","Abdulbasit_Abdusamad_5_-_Cairo_(عبد_الباسط_عبد_الصمد_-_القاهرة)","عبد الباسط عبد الصمد (القاهرة)","EG"],["g","Abdulbasit_Abdusamad_6_-_Fajr_Egypt_(عبد_الباسط_عبد_الصمد_-_فجر_مصر)","فجر عبد الباسط 1","EG"],["g","Abdulbasit_Abdusamad_7_-_Fajr_Egypt_(عبد_الباسط_عبد_الصمد_-_فجر_مصر)","فجر عبد الباسط 2","EG"],["g","Abul_Ainain_Shuaisha_-_Cairo_(أبو_العينين_شعيشع_-_القاهرة)","أبو العينين شعيشع","EG"],["g","Ahmed_Nuinaa_1_-_Egypt_(أحمد_نعينع_-_مصر)","أحمد نعينع 1","EG"],["g","Ahmed_Nuinaa_2_-_Cairo_(أحمد_نعينع_-_القاهرة)","أحمد نعينع 2","EG"],["g","Adhan_Fajr_Cairo_Egypt_(أذان_الفجر_القاهرة_مصر)","فجر القاهرة","EG"],["g","Abdulah_Al_Dahbe_-_Egypt_(عبدالله_الذهبي_-_مصر)","عبدالله الذهبي","EG"],["g","Adal_Malek_Abdulah_Al_Massre_(عادل_مالك_عبدالله_المصري)","عادل مالك المصري","EG"],["g","Ahmad_Ali_2_-_Egypt_(أحمد_علي_-_مصر)","أحمد علي","EG"],["g","Ahmad_Aamer_Muhammad_(أحمد_عامر_محمد)","أحمد عامر","EG"],["g","Adhan_Al_Aqsa_-_Jerusalem_(أذان_المسجد_الأقصى_-_القدس)","المسجد الأقصى","PS"],["g","Adhan_Al_Haram_Al_Madani_-_Al_Madinah_1_(أذان_الحرم_المدني_-_المدينة_المنورة)","الحرم المدني 1","SA"],["g","Adhan_Al_Haram_Al_Madani_-_Al_Madinah_2_(أذان_الحرم_المدني_-_المدينة_المنورة)","الحرم المدني 2","SA"],["g","Adhan_Fajr_Al_Haram_Al_Madani_(أذان_الفجر_الحرم_المدني)","فجر الحرم المدني","SA"],["g","Adhan_Fajr_Al_Haram_Al_Maki_(أذان_الفجر_الحرم_المكي)","فجر الحرم المكي","SA"],["g","Ali_Ibn_Ahmad_Mala_1_-_Al_Haram_Al_Maki_(علي_بن_أحمد_ملا_-_الحرم_المكي)","الحرم المكي - علي ملا 1","SA"],["g","Ali_Ibn_Ahmad_Mala_2_-_Al_Haram_Al_Maki_(علي_بن_أحمد_ملا_-_الحرم_المكي)","الحرم المكي - علي ملا 2","SA"],["g","Ali_Ibn_Ahmad_Mala_3_-_Al_Haram_Al_Maki_(علي_بن_أحمد_ملا_-_الحرم_المكي)","الحرم المكي - علي ملا 3","SA"],["g","Ali_Ibn_Ahmad_Mala_4_-_Al_Haram_Al_Maki_(علي_بن_أحمد_ملا_-_الحرم_المكي)","الحرم المكي - علي ملا 4","SA"],["g","Ali_Ibn_Ahmad_Mala_5_-_Al_Haram_Al_Maki_(علي_بن_أحمد_ملا_-_الحرم_المكي)","الحرم المكي - علي ملا 5","SA"],["g","Ali_Ibn_Ahmad_Mala_6_-_Al_Haram_Al_Maki_(علي_بن_أحمد_ملا_-_الحرم_المكي)","الحرم المكي - علي ملا 6","SA"],["g","Ali_Ibn_Ahmad_Mala_HQ","علي ملا (جودة عالية)","SA"],["g","Adhan_Riyadh_Saudi_Arabia_(أذان_الرياض_السعودية)","الرياض","SA"],["g","Adhan_Kuwait_(أذان_الكويت)","الكويت","KW"],["g","Adhan_Fajr_Kuwait_1_(أذان_الفجر_الكويت)","فجر الكويت 1","KW"],["g","Adhan_Fajr_Kuwait_2_(أذان_الفجر_الكويت)","فجر الكويت 2","KW"],["g","Adhan_Dubai_UAE_(أذان_دبي_الإمارات)","دبي","AE"],["g","Adhan_Muscat_Oman_(أذان_مسقط_عُمان)","مسقط","OM"],["g","Ahmad_Al_Amade_1_-_Qatar_(أحمد_العمادي_-_قطر)","أحمد العمادي 1 (قطر)","QA"],["g","Ahmad_Al_Amade_2_-_Qatar_(أحمد_العمادي_-_قطر)","أحمد العمادي 2 (قطر)","QA"],["g","Adhan_Syria_(أذان_سوريا)","سوريا","SY"],["g","Adhan_Tunisia_(أذان_تونس)","تونس","TN"],["g","Adhan_Fajr_Algeria_(أذان_الفجر_الجزائر)","فجر الجزائر","DZ"],["g","Adhan_Turkey_1_(أذان_تركيا)","تركيا 1","TR"],["g","Adhan_Turkey_2_(أذان_تركيا)","تركيا 2","TR"],["g","Adhan_Pakistan_(أذان_باكستان)","باكستان","PK"],["g","Adhan_Malaysia_1_(أذان_ماليزيا)","ماليزيا 1","MY"],["g","Adhan_Indonesia_(أذان_إندونيسيا)","إندونيسيا","ID"],["g","Ahmad_Al_Nafees_(أحمد_النفيس)","أحمد النفيس (2)","🌍"],["g","Ahmad_Nawaf_Al_Mejlad_1_(أحمد_نواف_المجلد)","أحمد نواف المجلد","SA"],["g","Ahmad_Nawaf_Al_Mejlad_2_-_Fajr_(أحمد_نواف_المجلد_-_الفجر)","فجر أحمد نواف المجلد","SA"],["g","Abdul_Majid_Al_Surehi_1_(عبدالمجيد_السريحي)","عبدالمجيد السريحي 1","SA"],["g","Abdul_Majid_Al_Surehi_2_(عبدالمجيد_السريحي)","عبدالمجيد السريحي 2","SA"],["g","Abdul_Rahman_Al_Arake_1_(عبدالرحمن_العراقي)","عبدالرحمن العراقي 1","IQ"],["g","Abdul_Rahman_Al_Arake_2_(عبدالرحمن_العراقي)","عبدالرحمن العراقي 2","IQ"],["g","Abd_Alrazaq_Saleh_-_Lebanon_(عبد_الرزاق_صالح_-_لبنان)","عبد الرزاق صالح (لبنان)","LB"]].map((x,i)=>({id:"az"+(i+1),n:x[2],c:flg(x[3]),u:x[0]==="h"?AZH+x[1]+".mp3":AZG+encodeURIComponent(x[1])+".mp3"}));
+const AZ=()=>XS.g("azan",{on:false,id:"az1",vol:.9,fav:[]}),azSet=v=>XS.s("azan",v),azAll=()=>(azDevURL?[{id:"cudev",n:"ملف من جهازك",c:"📱",u:azDevURL}]:[]).concat(XS.g("azcus",[]),AZL);
+const azUrl=o=>o.u||((window.DAWA_SUPABASE&&DAWA_SUPABASE.url?DAWA_SUPABASE.url+"/storage/v1/object/public/adhan":"adhan")+"/"+o.id+".mp3");
+let azA=null;
+function azStop(){try{speechSynthesis.cancel()}catch(e){}if(azA){azA.pause();azA=null}const s=$(".azs");if(s)s.remove();document.body.style.overflow=""}
+const azSrc=o=>{const r=[azUrl(o)];for(let k=0;k<AZL.length&&r.length<5;k++){const u=AZL[k].u;if(r.indexOf(u)<0)r.push(u)}return r};
+function azSpeak(){try{const s=speechSynthesis;s.cancel();const u=new SpeechSynthesisUtterance("اللَّهُ أَكْبَرُ اللَّهُ أَكْبَرُ، أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ، أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ، حَيَّ عَلَى الصَّلَاةِ، حَيَّ عَلَى الْفَلَاحِ، اللَّهُ أَكْبَرُ اللَّهُ أَكْبَرُ، لَا إِلَهَ إِلَّا اللَّهُ");u.lang="ar-SA";u.rate=.7;u.onend=()=>setTimeout(azStop,2000);s.speak(u)}catch(e){azBeep()}}
+function azTry(u,vol,ok,fail,d){let i=0;const nx=()=>{if(i>=u.length){fail(0);return}const a=new Audio();a.volume=vol;let done=0;const cur=u[i];const bad=()=>{if(done)return;done=1;clearTimeout(to);try{console.warn("adhan source failed:",cur);a.pause();a.removeAttribute("src");a.load()}catch(e){}nx()};a.onerror=bad;const to=setTimeout(bad,15000);a.src=u[i++];a.play().then(()=>{if(done)return;done=1;clearTimeout(to);a.onerror=null;ok(a)}).catch(e=>{if(done)return;if(e&&e.name==="NotAllowedError"){done=1;clearTimeout(to);if(d)d.onclick=ev=>{if(ev.target.id!=="az-s"){d.onclick=null;azTry(u,vol,ok,fail,d)}};fail(1)}else bad()})};nx()}
+function azFire(k,n){azStop();const A=AZ(),o=azAll().find(x=>x.id===A.id)||AZL[0],d=document.createElement("div");d.className="azs";d.dir=S.lang==="ar"?"rtl":"ltr";
+d.innerHTML=`<div><div class="azm">☪</div><div class="azn">${esc(L("It is time for ","حان الآن موعد أذان "))}${esc(n)}</div><div class="azt">${new Date().toLocaleTimeString(S.lang==="ar"?"ar-EG-u-nu-latn":"en-US",{hour:"2-digit",minute:"2-digit"})}</div><div class="azw">${"<i></i>".repeat(24)}</div><div>🔊 ${esc(o.n)}</div><p id="az-x" class="muted"></p><button class="btn gold" id="az-s">⏹️</button></div>`;
+document.body.appendChild(d);document.body.style.overflow="hidden";$("#az-s").onclick=azStop;
+azTry(azSrc(o),A.vol,a=>{azA=a;a.onended=()=>setTimeout(azStop,2500)},n=>{const x=$("#az-x");if(n){if(x)x.textContent=L("Tap anywhere to allow sound","اضغط في أي مكان لتشغيل الصوت")}else{if(x)x.textContent=L("Could not load the adhan audio. Open 🕌 and choose “a file from your device”.","تعذّر تحميل صوت الأذان من الإنترنت. افتح 🕌 واختر «ملف من جهازك».");azBeep();azSpeak()}},d);
+try{if(window.Notification&&Notification.permission==="granted")new Notification(L("Prayer time","حان وقت الصلاة")+": "+n)}catch(e){}}
+window.__azOn=()=>AZ().on;
+setInterval(()=>{if(!AZ().on)return;const{a}=ptToday(),now=Date.now(),day=new Date().toDateString();PN4.forEach(([k,n])=>{const tm=a[k];if(tm&&Math.abs(tm-now)<45e3&&!SEEN["az"+day+k]){SEEN["az"+day+k]=1;azFire(k,n)}})},15000);
+function openAzan(){const old=$(".azp");if(old)old.remove();const p=document.createElement("div");p.className="azp";p.dir=S.lang==="ar"?"rtl":"ltr";let q="",fo=false,pv=null;
+p.innerHTML=`<div class="in"><div class="row sb"><h2>🕌</h2><button class="btn ghost sm" id="az-c">✕</button></div><div class="card" style="display:grid;gap:8px"><button class="chip" id="az-on"></button><label class="sm">${esc(L("Volume","مستوى الصوت"))}<input type="range" id="az-v" min="0.1" max="1" step="0.1"></label><button class="btn sm" id="az-t" aria-label="test">🖥️</button><p class="muted sm">${esc(L("🔔 auto-play at prayer time (site open) · 🖥️ test","🔔 تشغيل تلقائي وقت الصلاة والموقع مفتوح · 🖥️ تجربة"))}</p></div><div class="card flat" style="display:grid;gap:6px"><b>${esc(L("Use an adhan file from your device","استخدم ملف أذان من جهازك"))}</b><input type="file" id="az-file" accept="audio/*"></div><input type="search" id="az-q" placeholder="${esc(L("Search adhan…","ابحث عن أذان…"))}"><div class="row"><button class="chip" id="az-a"></button><button class="chip" id="az-f"></button></div><div id="az-l" style="display:grid;gap:6px"></div><div class="card flat" style="display:grid;gap:6px"><b>${esc(L("Add your own adhan link","أضف رابط أذان خاص بك"))}</b><input type="text" id="az-n" placeholder="${esc(L("Name","الاسم"))}"><input type="text" id="az-u" dir="ltr" placeholder="https://…/adhan.mp3"><button class="btn sm" id="az-ad">➕</button></div></div>`;
+document.body.appendChild(p);const g=s=>p.querySelector(s);
+function draw(){const A=AZ(),F=A.fav||[];g("#az-on").setAttribute("aria-pressed",A.on);g("#az-on").textContent=A.on?"🔔":"🔕";g("#az-v").value=A.vol;g("#az-a").textContent="🌍 ("+azAll().length+")";g("#az-a").setAttribute("aria-pressed",!fo);g("#az-f").textContent="★ ("+F.length+")";g("#az-f").setAttribute("aria-pressed",fo);
+g("#az-l").innerHTML=azAll().filter(o=>(!fo||F.includes(o.id))&&(!q||o.n.includes(q))).map(o=>`<div class="azr"><button class="chip" data-p="${o.id}">▶</button><div class="grow"><b>${esc(o.n)}</b> <span class="muted sm">${o.c}</span></div><button class="fv" data-f="${o.id}">${F.includes(o.id)?"★":"☆"}</button><button class="chip" data-s="${o.id}" aria-pressed="${A.id===o.id}">${A.id===o.id?"🟢":"⚪"}</button></div>`).join("")||`<p class="muted">${esc(L("Nothing here yet.","لا يوجد شيء بعد."))}</p>`}
+g("#az-c").onclick=()=>{if(pv)pv.pause();p.remove()};g("#az-q").oninput=e=>{q=e.target.value.trim();draw()};g("#az-a").onclick=()=>{fo=false;draw()};g("#az-f").onclick=()=>{fo=true;draw()};
+g("#az-on").onclick=()=>{const A=AZ();A.on=!A.on;if(A.on&&window.Notification&&Notification.permission==="default")Notification.requestPermission();azSet(A);draw()};
+g("#az-v").oninput=e=>{const A=AZ();A.vol=+e.target.value;azSet(A);if(pv)pv.volume=A.vol};g("#az-t").onclick=()=>{p.remove();azFire("test",L("test","تجريبي"))};
+g("#az-file").onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;try{await azDevSave(f);const A=AZ();A.id="cudev";azSet(A);draw()}catch(x){tsa(L("Could not save the file","تعذّر حفظ الملف"))}};g("#az-ad").onclick=()=>{const n=g("#az-n").value.trim(),u=g("#az-u").value.trim();if(!n||!/^https?:\/\//.test(u))return;const c=XS.g("azcus",[]);c.unshift({id:"cu"+Date.now(),n:n,c:"⭐",u:u});XS.s("azcus",c);g("#az-n").value=g("#az-u").value="";draw()};
+g("#az-l").onclick=e=>{const b=e.target.closest("button");if(!b)return;const A=AZ();A.fav=A.fav||[];
+if(b.dataset.f){const i=A.fav.indexOf(b.dataset.f);i<0?A.fav.push(b.dataset.f):A.fav.splice(i,1);azSet(A);draw()}
+else if(b.dataset.s){A.id=b.dataset.s;azSet(A);draw()}
+else if(b.dataset.p){if(pv){pv.pause();if(pv.__i===b.dataset.p){pv=null;b.textContent="▶";return}}const o=azAll().find(x=>x.id===b.dataset.p),id=o.id;g("#az-l").querySelectorAll("[data-p]").forEach(x=>x.textContent="▶");b.textContent="⏳";pv={pause(){},__i:id};azTry(azSrc(o),A.vol,a=>{a.__i=id;pv=a;b.textContent="⏸";a.onended=()=>{b.textContent="▶"}},()=>{b.textContent="✕";azBeep();azSpeak()})}};
+draw()}
+const ab=document.createElement("button");ab.id="azanBtn";ab.type="button";ab.className="iconbtn";ab.textContent="🕌";ab.setAttribute("aria-label","adhan");ab.onclick=openAzan;const pb0=$("#profBtn");if(pb0)pb0.before(ab);
+/* قوالب الصور: 12 لوحة ألوان × 9 أنماط = 108 */
+const TP=[["#0f3d33","#1d6b57","#d4af37","#ffffff"],["#0B1120","#1F2B45","#D4AF37","#E7ECF3"],["#4a1d6b","#8a3fb5","#f5d76e","#ffffff"],["#7a1f2b","#c0475a","#ffe6a7","#ffffff"],["#0c3c5c","#2d86b8","#ffd479","#ffffff"],["#f7f1e1","#e6d3a3","#7a5a14","#2b2200"],["#1b4332","#52b788","#fefae0","#ffffff"],["#222831","#393e46","#ffd369","#eeeeee"],["#3d2c1e","#8c6a46","#f4d58d","#ffffff"],["#1a237e","#5c6bc0","#ffd54f","#ffffff"],["#004d40","#26a69a","#fff59d","#ffffff"],["#fdf6e3","#cfe8dc","#047857","#0e1e1b"]],NT=108;
+function star8(g,x,y,r){g.beginPath();for(let k=0;k<16;k++){const a=k*Math.PI/8,rr=k%2?r*.6:r;g[k?"lineTo":"moveTo"](x+rr*Math.cos(a),y+rr*Math.sin(a))}g.closePath()}
+function tplDraw(g,i,W,tx,ref){const p=TP[i%12],s=Math.floor(i/12)%9;g.save();g.scale(W/1080,W/1080);const gr=g.createLinearGradient(0,0,s%2?1080:0,1080);gr.addColorStop(0,p[0]);gr.addColorStop(1,p[1]);g.fillStyle=gr;g.fillRect(0,0,1080,1080);
+g.strokeStyle=p[2];g.fillStyle=p[2];g.lineWidth=6;const A=a=>{g.globalAlpha=a};
+if(s===1){g.strokeRect(40,40,1000,1000);g.lineWidth=2;g.strokeRect(70,70,940,940)}
+else if(s===2){g.strokeRect(40,40,1000,1000);g.lineWidth=5;[[40,40,0],[1040,40,1],[1040,1040,2],[40,1040,3]].forEach(c=>{g.beginPath();g.arc(c[0],c[1],170,c[2]*Math.PI/2,(c[2]+1)*Math.PI/2);g.stroke()})}
+else if(s===3){A(.14);for(let x=0;x<7;x++)for(let y=0;y<7;y++){g.beginPath();g.arc(90+x*150,90+y*150,60,0,7);g.stroke()}A(1);g.strokeRect(40,40,1000,1000)}
+else if(s===4){A(.12);g.lineWidth=10;for(let x=-1080;x<1080;x+=70){g.beginPath();g.moveTo(x,0);g.lineTo(x+1080,1080);g.stroke()}A(1);g.lineWidth=6;g.strokeRect(40,40,1000,1000)}
+else if(s===5){A(.2);for(let x=0;x<18;x++)for(let y=0;y<18;y++){g.beginPath();g.arc(30+x*60,30+y*60,4,0,7);g.fill()}A(1);g.strokeRect(40,40,1000,1000)}
+else if(s===6){g.lineWidth=8;g.beginPath();g.moveTo(150,1020);g.lineTo(150,520);g.arc(540,520,390,Math.PI,0);g.lineTo(930,1020);g.stroke()}
+else if(s===7){A(.13);for(let x=0;x<5;x++)for(let y=0;y<5;y++){star8(g,110+x*215,110+y*215,70);g.fill()}A(1);g.strokeRect(40,40,1000,1000)}
+else if(s===8){const r=g.createRadialGradient(540,540,20,540,540,620);r.addColorStop(0,p[2]+"66");r.addColorStop(1,"#0000");g.fillStyle=r;g.fillRect(0,0,1080,1080);g.strokeRect(40,40,1000,1000)}
+else g.strokeRect(40,40,1000,1000);
+if(tx){g.fillStyle=p[3];g.textAlign="center";g.direction="rtl";let fs=64,ln;for(;fs>=30;fs-=4){g.font=fs+"px Amiri,'Traditional Arabic',serif";ln=wrapT(g,tx,800);if(ln.length*fs*1.9<700)break}
+const y0=540-(ln.length-1)*fs*.95;ln.forEach((l,j)=>g.fillText(l,540,y0+j*fs*1.9));g.fillStyle=p[2];g.font="38px serif";g.fillText(ref,540,975)}g.restore()}
+XQ.tpl=XS.g("tpl",0);XQ.tf=false;
+async function mkImg(){const o=$("#xt-o");o.innerHTML="…";try{const j=await xj(`https://api.alquran.cloud/v1/ayah/${XQ.s}:${XQ.a}/quran-uthmani`),c=document.createElement("canvas");c.width=c.height=1080;tplDraw(c.getContext("2d"),XQ.tpl,1080,j.data.text,"﴿ "+AR[XQ.s-1]+" : "+XQ.a+" ﴾");const u=c.toDataURL("image/png");
+o.innerHTML=`<img src="${u}" alt="" style="max-width:100%;border-radius:12px"><p><a class="btn" download="ayah-${XQ.s}-${XQ.a}.png" href="${u}">⬇ ${esc(L("Download image","تحميل الصورة"))}</a></p>`}catch(e){xerr("xt-o",e.message)}}
+function tplGrid(){const b=$("#tpl-g");if(!b)return;const F=XS.g("tplfav",[]);let h=`<div class="row" style="margin:10px 0"><button class="chip" data-tf="0" aria-pressed="${!XQ.tf}">${esc(L("All","الكل"))} (${NT})</button><button class="chip" data-tf="1" aria-pressed="${XQ.tf}">★ ${esc(L("Favourites","المفضلة"))} (${F.length})</button></div><div class="tpg">`;
+for(let i=0;i<NT;i++){if(XQ.tf&&!F.includes(i))continue;h+=`<div class="tpc" aria-pressed="${XQ.tpl===i}"><canvas width="120" height="120" data-t="${i}"></canvas><button class="tfv" data-tv="${i}">${F.includes(i)?"★":"☆"}</button></div>`}
+b.innerHTML=h+"</div>";b.querySelectorAll("canvas").forEach(c=>tplDraw(c.getContext("2d"),+c.dataset.t,120))}
+document.addEventListener("click",e=>{const c=e.target.closest("[data-t]"),v=e.target.closest("[data-tv]"),f=e.target.closest("[data-tf]");if(!$("#tpl-g"))return;
+if(v){const F=XS.g("tplfav",[]),i=+v.dataset.tv,k=F.indexOf(i);k<0?F.push(i):F.splice(k,1);XS.s("tplfav",F);tplGrid()}else if(c&&c.tagName==="CANVAS"){XQ.tpl=+c.dataset.t;XS.s("tpl",XQ.tpl);tplGrid()}else if(f){XQ.tf=f.dataset.tf==="1";tplGrid()}});
+mk("xt_img","Share an ayah as an image","مشاركة آية كصورة","108 templates, save favourites","108 قالب مع حفظ المفضلة",()=>`<div class="row">${ssel("s")}${num("a",1,286)}<button class="btn" data-m="mkimg">${esc(L("Create image","إنشاء الصورة"))}</button></div><div id="xt-o"></div><div id="tpl-g"></div>`,tplGrid);
+
 mk("xt_adhan","Adhan & white-days alerts","تنبيه الأذان والأيام البيضاء","Alerts while the app is open","تنبيهات تعمل والتطبيق مفتوح",()=>{const A=AD();let nx="";for(let i=0;i<31;i++){const d=new Date(Date.now()+i*864e5);if(hij(d).d===13){nx=i;break}}const h=hij(new Date());
  return `<div class="card" style="display:grid;gap:8px"><button class="chip" data-d4="adon" aria-pressed="${A.on}">${esc(L("Adhan alert at prayer time","تنبيه عند دخول وقت الصلاة"))}</button><button class="chip" data-d4="adwb" aria-pressed="${A.wb}">${esc(L("White days alert (13–15)","تنبيه الأيام البيضاء (13–15)"))}</button><button class="btn sm" data-d4="adtest">${esc(L("Test alert","تجربة التنبيه"))}</button></div><div class="card flat">${esc(L("Hijri day","اليوم الهجري"))}: <b>${h.d}</b> · ${nx===0?esc(L("Today is a white day","اليوم من الأيام البيضاء")):esc(L("Next white days in","الأيام البيضاء القادمة بعد"))+" <b>"+nx+"</b> "+esc(L("day(s)","يوم"))}</div><p class="muted sm">${esc(L("Browsers can only alert while this page is open. Prayer times use your saved location (Cairo if none).","المتصفح يُنبّه فقط والصفحة مفتوحة. الأوقات حسب موقعك المحفوظ (القاهرة إن لم يوجد)."))}</p>`});
 mk("xt_widget","Next prayer widget","ودجت الصلاة القادمة","Large countdown to the next prayer","عدّاد كبير للصلاة القادمة",()=>`<div class="card" style="text-align:center;padding:30px"><div class="muted" id="w-n" style="font-size:22px"></div><div id="w-c" style="font-size:56px;font-weight:700;font-variant-numeric:tabular-nums"></div><div class="muted sm" id="w-t"></div></div>`,()=>{clearInterval(PI2);const tick=()=>{if(!$("#w-c"))return clearInterval(PI2);const {a,b,tz}=ptToday(),now=Date.now(),all=[["fajr","الفجر"],["dhuhr","الظهر"],["asr","العصر"],["maghrib","المغرب"],["isha","العشاء"]];let nk=all.find(([k])=>a[k]>now),tg=nk?a[nk[0]]:b.fajr,nm=nk?nk[1]:"الفجر";const s=Math.max(0,Math.floor((tg-now)/1e3)),p=n=>String(n).padStart(2,"0");$("#w-n").textContent=L("Next: ","القادمة: ")+nm;$("#w-c").textContent=`${p(Math.floor(s/3600))}:${p(Math.floor(s%3600/60))}:${p(s%60)}`;$("#w-t").textContent=new Intl.DateTimeFormat("ar-EG-u-nu-latn",{timeZone:tz,hour:"2-digit",minute:"2-digit"}).format(tg)};tick();PI2=setInterval(tick,1000)});
@@ -3124,6 +3212,7 @@ new MutationObserver(ms=>{const lg=nlLang();nlEnsure();nlBuild();
 xApply();
 
 applyChrome();render();
+
 })();
 </script>
 <script type="text/plain" data-dawa>
